@@ -64,6 +64,10 @@ public:
    * @param z The measurement at k+1
    */
   void UpdateEKF(const Eigen::VectorXd &z);
+// Simplify KF operation:
+  MatrixXd CalculateKalmanGain();
+// function to simplfy code lines, keep everything cleaner:
+  void Estimate(const Eigen::VectorXd &y, const Eigen::MatrixXd &K);
 
 };
 

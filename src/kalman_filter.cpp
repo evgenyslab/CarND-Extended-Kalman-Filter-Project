@@ -21,11 +21,6 @@ void KalmanFilter::Init(VectorXd &x_in, MatrixXd &P_in, MatrixXd &F_in,
 }
 
 void KalmanFilter::Predict() {
-  /**
-  TODO:
-    * predict the state
-  */
-
   x_ = F_ * x_;
   MatrixXd Ft = F_.transpose();
   P_ = F_ * P_ * Ft + Q_;
@@ -36,19 +31,13 @@ void KalmanFilter::Update(const VectorXd &z) {
   TODO:
     * update the state by using Kalman Filter equations
   */
-  VectorXd z_pred = H_ * x_;  // USE H_laser
-  VectorXd y = z - z_pred;
-  MatrixXd Ht = H_.transpose();
-  MatrixXd S = H_ * P_ * Ht + R_; // TODO: MUST USE R_laser
-  MatrixXd Si = S.inverse();
-  MatrixXd PHt = P_ * Ht;
-  MatrixXd K = PHt * Si;
+  VectorXd y = z - H_ * x_;
+  // MatrixXd Ht = H_.transpose();
+  // MatrixXd S = H_ * P_ * Ht + R_; // TODO: MUST USE R_laser
+  // MatrixXd K = (P_ * Ht) * S.inverse();
 
-  //new estimate
-  x_ = x_ + (K * y);
-  long x_size = x_.size();
-  MatrixXd I = MatrixXd::Identity(x_size, x_size);
-  P_ = (I - K * H_) * P_;
+  MatrixXd K = CalculateKalmanGain();
+  Estimate(y,K); // Use 1 function to reduce lines.
 }
 
 void KalmanFilter::UpdateEKF(const VectorXd &z) {
@@ -59,12 +48,23 @@ void KalmanFilter::UpdateEKF(const VectorXd &z) {
   */
   // TODO: Convert x_ to polar coordinates FIRST!
   VectorXd y = z - Tools::CalculatePolarMap(x_);  // TODO CHANGE THIS z_pred = z - h(x')
-  MatrixXd Ht = H_.transpose();
-  MatrixXd S = H_ * P_ * Ht + R_; // TODO: MUST USE R_radar (set outside this function)
-  MatrixXd Si = S.inverse();
-  MatrixXd PHt = P_ * Ht;
-  MatrixXd K = PHt * Si;
+  // MatrixXd Ht = H_.transpose();
+  // MatrixXd S = H_ * P_ * Ht + R_; // TODO: MUST USE R_radar (set outside this function)
+  // MatrixXd K = (P_ * Ht) * S.inverse();
 
+  MatrixXd K = CalculateKalmanGain();
+  Estimate(y,K);
+}
+
+MatrixXd KalmanFilter::CalculateKalmanGain(){
+  MatrixXd Ht = H_.transpose();
+  MatrixXd S = H_ * P_ * Ht + R_; // TODO: MUST USE R_laser
+  MatrixXd K = (P_ * Ht) * S.inverse();
+
+  return K;
+}
+
+void KalmanFilter::Estimate(const VectorXd &y, const MatrixXd &K){
   //new estimate
   x_ = x_ + (K * y);
   long x_size = x_.size();
