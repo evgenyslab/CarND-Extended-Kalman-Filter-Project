@@ -22,3 +22,10 @@ xcuserdata/
 *.xcscmblueprint
 ide_profiles/xcode/Debug/
 ide_profiles/xcode/ExtendedKF.build/
+
+# Clion stuff
+*.idea
+cmake-build-debug/
+
+# Evgeny stuff
+term2_sim.app
