@@ -3,7 +3,7 @@
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
-// Please note that the Eigen library does not initialize 
+// Please note that the Eigen library does not initialize
 // VectorXd or MatrixXd objects with zeros upon creation.
 
 KalmanFilter::KalmanFilter() {}
@@ -36,10 +36,10 @@ void KalmanFilter::Update(const VectorXd &z) {
   TODO:
     * update the state by using Kalman Filter equations
   */
-  VectorXd z_pred = H_ * x_;
+  VectorXd z_pred = H_ * x_;  // USE H_laser
   VectorXd y = z - z_pred;
   MatrixXd Ht = H_.transpose();
-  MatrixXd S = H_ * P_ * Ht + R_;
+  MatrixXd S = H_ * P_ * Ht + R_; // TODO: MUST USE R_laser
   MatrixXd Si = S.inverse();
   MatrixXd PHt = P_ * Ht;
   MatrixXd K = PHt * Si;
@@ -55,5 +55,19 @@ void KalmanFilter::UpdateEKF(const VectorXd &z) {
   /**
   TODO:
     * update the state by using Extended Kalman Filter equations
+    z is polar coordinates rho, theta, rho-dot
   */
+  // TODO: Convert x_ to polar coordinates FIRST!
+  VectorXd y = z - Tools::CalculatePolarMap(x_);  // TODO CHANGE THIS z_pred = z - h(x')
+  MatrixXd Ht = H_.transpose();
+  MatrixXd S = H_ * P_ * Ht + R_; // TODO: MUST USE R_radar (set outside this function)
+  MatrixXd Si = S.inverse();
+  MatrixXd PHt = P_ * Ht;
+  MatrixXd K = PHt * Si;
+
+  //new estimate
+  x_ = x_ + (K * y);
+  long x_size = x_.size();
+  MatrixXd I = MatrixXd::Identity(x_size, x_size);
+  P_ = (I - K * H_) * P_;
 }

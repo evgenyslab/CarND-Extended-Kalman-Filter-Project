@@ -5,9 +5,7 @@ using Eigen::VectorXd;
 using Eigen::MatrixXd;
 using std::vector;
 
-Tools::Tools() {}
-
-Tools::~Tools() {}
+// EN: Removed constructor/ destructor, made tool functions static to avoid object instantiation.
 
 VectorXd Tools::CalculateRMSE(const vector<VectorXd> &estimations,
                               const vector<VectorXd> &ground_truth) {
@@ -85,4 +83,29 @@ MatrixXd Tools::CalculateJacobian(const VectorXd& x_state) {
                 py/(sqrt(px2py2));
     }
     return Hj;
+}
+
+VectorXd Tools::CalculatePolarMap(const VectorXd& x_state){
+  VectorXd h(3);
+  //recover state parameters
+  float px = x_state(0);
+  float py = x_state(1);
+  float vx = x_state(2);
+  float vy = x_state(3);
+  float px2py2 = pow(px,2) + pow(py,2);
+  //check division by zero
+  if (fabs(px2py2)<1e-6){
+      cout << "Error: Tools::CalculatePolarMap() , px^2 + py^2 ~= 0!\n";
+      h << 0,0,0;
+  }
+  else{
+    // this ensures that the angle theta is 0 is px is 0
+    // NOTE: x-axis is forward...
+    // px must be greater than 0!
+    float theta = (fabs(px)<1e-4? 0: atan(py/px)); // centered on x-axis in range (-pi, pi)
+    h << sqrt(px2py2), theta, (px*vx + py*vy)/sqrt(px2py2);
+  }
+
+  return h;
+
 }
