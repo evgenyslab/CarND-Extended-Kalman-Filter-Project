@@ -99,10 +99,9 @@ VectorXd Tools::CalculatePolarMap(const VectorXd& x_state){
       h << 0,0,0;
   }
   else{
-    // this ensures that the angle theta is 0 is px is 0
-    // NOTE: x-axis is forward...
-    // px must be greater than 0!
-    float theta = (fabs(px)<1e-4? 0: atan(py/px)); // centered on x-axis in range (-pi, pi)
+
+      // use atan2 to get correct quandrant:
+      float theta = atan2(py,px);
     h << sqrt(px2py2), theta, (px*vx + py*vy)/sqrt(px2py2);
   }
 

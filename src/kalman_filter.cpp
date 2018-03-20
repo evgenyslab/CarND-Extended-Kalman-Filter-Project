@@ -47,10 +47,29 @@ void KalmanFilter::UpdateEKF(const VectorXd &z) {
     z is polar coordinates rho, theta, rho-dot
   */
   // TODO: Convert x_ to polar coordinates FIRST!
-  VectorXd y = z - Tools::CalculatePolarMap(x_);  // TODO CHANGE THIS z_pred = z - h(x')
-  // MatrixXd Ht = H_.transpose();
-  // MatrixXd S = H_ * P_ * Ht + R_; // TODO: MUST USE R_radar (set outside this function)
-  // MatrixXd K = (P_ * Ht) * S.inverse();
+    VectorXd Hx = Tools::CalculatePolarMap(x_); // this should convert -pi,pi
+    VectorXd zm = VectorXd(3);
+    float rho = z(0);
+    float theta = z(1);
+    float rhodot = z(2);
+    // Here, wrap theta between -pi,pi
+    if (theta>PI){
+        theta = -PI + (theta-PI);
+    }else if (theta < -PI){
+        theta = PI - (-theta-PI);
+    }
+    zm << rho , theta , rhodot;// seems like theta can be > pi...
+
+    // This code sets the innovation term (or error term) of the radar measurement to correctly wrap around -pi.pi limits:
+    VectorXd y = VectorXd(3);
+    auto dtheta = zm[1]-Hx[1];
+    if (dtheta > PI){
+        dtheta = -(2*PI-fabs(dtheta));
+    }else if(dtheta <-PI){
+        dtheta = (2*PI-fabs(dtheta));
+    }
+    y << zm[0]-Hx[0],dtheta, zm[2] - Hx[2];
+
 
   MatrixXd K = CalculateKalmanGain();
   Estimate(y,K);
