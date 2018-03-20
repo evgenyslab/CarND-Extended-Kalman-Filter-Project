@@ -27,62 +27,47 @@ void KalmanFilter::Predict() {
 }
 
 void KalmanFilter::Update(const VectorXd &z) {
-  /**
-  TODO:
-    * update the state by using Kalman Filter equations
-  */
+  // innovation:
   VectorXd y = z - H_ * x_;
-  // MatrixXd Ht = H_.transpose();
-  // MatrixXd S = H_ * P_ * Ht + R_; // TODO: MUST USE R_laser
-  // MatrixXd K = (P_ * Ht) * S.inverse();
-
+  // calculate Kalman gain using single function:
   MatrixXd K = CalculateKalmanGain();
-  Estimate(y,K); // Use 1 function to reduce lines.
-}
-
-void KalmanFilter::UpdateEKF(const VectorXd &z) {
-  /**
-  TODO:
-    * update the state by using Extended Kalman Filter equations
-    z is polar coordinates rho, theta, rho-dot
-  */
-  // TODO: Convert x_ to polar coordinates FIRST!
-    VectorXd Hx = Tools::CalculatePolarMap(x_); // this should convert -pi,pi
-    VectorXd zm = VectorXd(3);
-    float rho = z(0);
-    float theta = z(1);
-    float rhodot = z(2);
-    // Here, wrap theta between -pi,pi
-    if (theta>PI){
-        theta = -PI + (theta-PI);
-    }else if (theta < -PI){
-        theta = PI - (-theta-PI);
-    }
-    zm << rho , theta , rhodot;// seems like theta can be > pi...
-
-    // This code sets the innovation term (or error term) of the radar measurement to correctly wrap around -pi.pi limits:
-    VectorXd y = VectorXd(3);
-    auto dtheta = zm[1]-Hx[1];
-    if (dtheta > PI){
-        dtheta = -(2*PI-fabs(dtheta));
-    }else if(dtheta <-PI){
-        dtheta = (2*PI-fabs(dtheta));
-    }
-    y << zm[0]-Hx[0],dtheta, zm[2] - Hx[2];
-
-
-  MatrixXd K = CalculateKalmanGain();
+  // run state estimate using single function:
   Estimate(y,K);
 }
 
+void KalmanFilter::UpdateEKF(const VectorXd &z) {
+
+  // get state components:
+  float px = x_[0];
+  float py = x_[1];
+  float vx = x_[2];
+  float vy = x_[3];
+  // create vector for h(x'):
+  VectorXd Hx(3);
+  // populate h(x') with [rho, theta, tho_dot]:
+  Hx << sqrt( px*px + py*py ), atan2( py, px ), ( px*vx + py*vy )/sqrt( px*px + py*py );
+  // Innovation term:
+  VectorXd y = z - Hx;
+  // check error distance on theta and wrap between -pi,pi:
+  if( y[1] > PI )
+    y[1] -= 2.f*PI;
+  if( y[1] < -PI )
+    y[1] += 2.f*PI;
+  // calculate Kalman gain using single function:
+  MatrixXd K = CalculateKalmanGain();
+  // run state estimate using single function:
+  Estimate(y,K);
+}
+
+// common function for kalman gain calculation
 MatrixXd KalmanFilter::CalculateKalmanGain(){
   MatrixXd Ht = H_.transpose();
-  MatrixXd S = H_ * P_ * Ht + R_; // TODO: MUST USE R_laser
+  MatrixXd S = H_ * P_ * Ht + R_;
   MatrixXd K = (P_ * Ht) * S.inverse();
-
   return K;
 }
 
+// common function for state update and covariance update
 void KalmanFilter::Estimate(const VectorXd &y, const MatrixXd &K){
   //new estimate
   x_ = x_ + (K * y);

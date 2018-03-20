@@ -22,11 +22,6 @@ public:
   */
   static MatrixXd CalculateJacobian(const VectorXd& x_state);
 
-  /**
-  * A helper method to h(x').
-  */
-  static VectorXd CalculatePolarMap(const VectorXd& x_state);
-
 };
 
 #endif /* TOOLS_H_ */

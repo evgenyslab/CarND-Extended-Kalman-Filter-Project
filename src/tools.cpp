@@ -9,10 +9,6 @@ using std::vector;
 
 VectorXd Tools::CalculateRMSE(const vector<VectorXd> &estimations,
                               const vector<VectorXd> &ground_truth) {
-  /**
-  TODO:
-    * Calculate the RMSE here.
-  */
     VectorXd rmse(4);
     rmse << 0,0,0,0;
 
@@ -46,65 +42,29 @@ VectorXd Tools::CalculateRMSE(const vector<VectorXd> &estimations,
 }
 
 MatrixXd Tools::CalculateJacobian(const VectorXd& x_state) {
-  /**
-  TODO:
-    * Calculate a Jacobian here.
-  */
 
-    MatrixXd Hj(3,4);
-    //recover state parameters
-    float px = x_state(0);
-    float py = x_state(1);
-    float vx = x_state(2);
-    float vy = x_state(3);
-
-    //TODO: YOUR CODE HERE
-    float px2py2 = pow(px,2) + pow(py,2);
-    float vxpy = vx*py;
-    float vypx = vy*px;
-    //check division by zero
-    if (fabs(px2py2)<1e-6){
-        cout << "Error\n";
-        Hj << 0,0,0,0,0,0,0,0,0,0,0,0;
-    }
-    else{
-        //compute the Jacobian matrix
-        Hj <<   px/(sqrt(px2py2)),
-                py/(sqrt(px2py2)),
-                0,
-                0,
-                -py/px2py2,
-                px/px2py2,
-                0,
-                0,
-                py*(vxpy-vypx)/sqrt(pow(px2py2,3)),
-                px*(vypx-vxpy)/sqrt(pow(px2py2,3)),
-                px/(sqrt(px2py2)),
-                py/(sqrt(px2py2));
-    }
-    return Hj;
-}
-
-VectorXd Tools::CalculatePolarMap(const VectorXd& x_state){
-  VectorXd h(3);
+  MatrixXd Hj(3,4);
   //recover state parameters
   float px = x_state(0);
   float py = x_state(1);
   float vx = x_state(2);
   float vy = x_state(3);
-  float px2py2 = pow(px,2) + pow(py,2);
+
+  //pre-compute a set of terms to avoid repeated calculation
+  float c1 = px*px+py*py;
+  float c2 = sqrt(c1);
+  float c3 = (c1*c2);
+
   //check division by zero
-  if (fabs(px2py2)<1e-6){
-      cout << "Error: Tools::CalculatePolarMap() , px^2 + py^2 ~= 0!\n";
-      h << 0,0,0;
-  }
-  else{
-
-      // use atan2 to get correct quandrant:
-      float theta = atan2(py,px);
-    h << sqrt(px2py2), theta, (px*vx + py*vy)/sqrt(px2py2);
+  if(fabs(c1) < 0.0001){
+  cout << "CalculateJacobian () - Error - Division by Zero" << endl;
+  return Hj;
   }
 
-  return h;
+  //compute the Jacobian matrix
+  Hj << (px/c2), (py/c2), 0, 0,
+  -(py/c1), (px/c1), 0, 0,
+  py*(vx*py - vy*px)/c3, px*(px*vy - py*vx)/c3, px/c2, py/c2;
 
+  return Hj;
 }
